@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>MedData Doctor 🩻</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🩻</text></svg>" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/browser@1.12.0/build/stlite.css" />
+    <style>
+      body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        background-color: #0e1117;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+      #loading-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #0e1117;
+        color: #ffffff;
+        z-index: 99999;
+        transition: opacity 0.4s ease-out;
+      }
+      .loader-spinner {
+        width: 52px;
+        height: 52px;
+        border: 4px solid rgba(255, 255, 255, 0.15);
+        border-top-color: #ff4b4b;
+        border-radius: 50%;
+        animation: spin 0.9s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+        margin-bottom: 22px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .loader-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin: 0 0 8px 0;
+        letter-spacing: -0.02em;
+      }
+      .loader-subtitle {
+        font-size: 0.95rem;
+        color: #94a3b8;
+        margin: 0 0 16px 0;
+      }
+      .loader-status {
+        font-size: 0.85rem;
+        color: #ff4b4b;
+        font-family: monospace;
+      }
+      .error-box {
+        background: rgba(239, 68, 68, 0.15);
+        border: 1px solid #ef4444;
+        color: #fca5a5;
+        padding: 16px 20px;
+        border-radius: 8px;
+        max-width: 500px;
+        margin-top: 16px;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loading-overlay">
+      <div class="loader-spinner" id="loader-icon"></div>
+      <div class="loader-title">🩻 MedData Doctor</div>
+      <div class="loader-subtitle">Loading WebAssembly Python environment...</div>
+      <div id="status-text" class="loader-status">Initializing...</div>
+    </div>
+
+    <div id="root"></div>
+
+    <script type="module">
+      import { mount } from "https://cdn.jsdelivr.net/npm/@stlite/browser@1.12.0/build/stlite.js";
+
+      const statusEl = document.getElementById("status-text");
+      const overlayEl = document.getElementById("loading-overlay");
+      const updateStatus = (msg) => { if (statusEl) statusEl.textContent = msg; };
+
+      async function init() {
+        if (window.location.protocol === "file:") {
+          updateStatus("Warning: Local file detected");
+          const box = document.createElement("div");
+          box.className = "error-box";
+          box.innerHTML = "<strong>Notice:</strong> Browsers block fetching files directly via <code>file://</code>.<br>Please view this via a local server (e.g. <code>python -m http.server</code>) or deployed on <strong>Vercel</strong>.";
+          overlayEl.appendChild(box);
+          return;
+        }
+
+        try {
+          updateStatus("Loading application scripts...");
+          const [appPy, auditPy, rulesPy, demoPy] = await Promise.all([
+            fetch("./app.py").then((r) => {
+              if (!r.ok) throw new Error("Could not load app.py");
+              return r.text();
+            }),
+            fetch("./audit.py").then((r) => {
+              if (!r.ok) throw new Error("Could not load audit.py");
+              return r.text();
+            }),
+            fetch("./rules.py").then((r) => {
+              if (!r.ok) throw new Error("Could not load rules.py");
+              return r.text();
+            }),
+            fetch("./demo.py").then((r) => {
+              if (!r.ok) throw new Error("Could not load demo.py");
+              return r.text();
+            })
+          ]);
+
+          updateStatus("Loading packages (pandas, numpy, scikit-learn)...");
+          mount(
+            {
+              entrypoint: "app.py",
+              files: {
+                "app.py": appPy,
+                "audit.py": auditPy,
+                "rules.py": rulesPy,
+                "demo.py": demoPy
+              },
+              requirements: ["pandas", "numpy", "scikit-learn"]
+            },
+            document.getElementById("root")
+          );
+
+          // Once Streamlit root renders, smoothly fade out loading screen
+          const rootEl = document.getElementById("root");
+          const observer = new MutationObserver(() => {
+            if (rootEl.querySelector(".stApp") || rootEl.children.length > 0) {
+              if (overlayEl) {
+                overlayEl.style.opacity = "0";
+                setTimeout(() => overlayEl.remove(), 400);
+              }
+              observer.disconnect();
+            }
+          });
+          observer.observe(rootEl, { childList: true, subtree: true });
+        } catch (err) {
+          console.error("Initialization error:", err);
+          updateStatus("Failed to start application: " + err.message);
+          const icon = document.getElementById("loader-icon");
+          if (icon) icon.style.display = "none";
+        }
+      }
+
+      init();
+    </script>
+  </body>
+</html>
