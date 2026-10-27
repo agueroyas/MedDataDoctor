@@ -1,3 +1,7 @@
+# Copyright (c) 2026 Abdulrahman Muhammed Abdalnafea
+# MedData Doctor — https://github.com/agueroyas/MedDataDoctor
+# Third-party packages below retain their own licenses.
+
 streamlit
 pandas
 numpy
