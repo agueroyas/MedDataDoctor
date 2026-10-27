@@ -1,3 +1,8 @@
+# Copyright (c) 2026 Abdulrahman Muhammed Abdalnafea
+# MedData Doctor — https://github.com/agueroyas/MedDataDoctor
+# Author profile: https://github.com/agueroyas
+# See LICENSE for permitted use. Third-party components retain their own licenses.
+
 """Plausibility rules for common clinical measurements.
 
 Aliases are written in normalized form (lowercase, letters and digits only).
