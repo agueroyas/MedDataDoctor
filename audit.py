@@ -1,3 +1,8 @@
+# Copyright (c) 2026 Abdulrahman Muhammed Abdalnafea
+# MedData Doctor — https://github.com/agueroyas/MedDataDoctor
+# Author profile: https://github.com/agueroyas
+# See LICENSE for permitted use. Third-party components retain their own licenses.
+
 """MedData Doctor - audit engine (no UI, so it is easy to test)."""
 from __future__ import annotations
 
